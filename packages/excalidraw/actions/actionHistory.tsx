@@ -1,17 +1,18 @@
+import { RedoIcon, UndoIcon } from '../components/icons';
+import { ToolButton } from '../components/ToolButton';
+import { t } from '../i18n';
+import { HistoryChangedEvent } from '../history';
+import { KEYS, matchKey } from '../keys';
+import { arrayToMap } from '../utils';
+import { isWindows } from '../constants';
+import { StoreAction } from '../store';
+import { useEmitter } from '../hooks/useEmitter';
+import mixpanel from 'mixpanel-browser';
 import type { Action, ActionResult } from "./types";
-import { UndoIcon, RedoIcon } from "../components/icons";
-import { ToolButton } from "../components/ToolButton";
-import { t } from "../i18n";
 import type { History } from "../history";
-import { HistoryChangedEvent } from "../history";
 import type { AppClassProperties, AppState } from "../types";
-import { KEYS, matchKey } from "../keys";
-import { arrayToMap } from "../utils";
-import { isWindows } from "../constants";
 import type { SceneElementsMap } from "../element/types";
 import type { Store } from "../store";
-import { StoreAction } from "../store";
-import { useEmitter } from "../hooks/useEmitter";
 
 const executeHistoryAction = (
   app: AppClassProperties,
@@ -118,7 +119,10 @@ export const createRedoAction: ActionCreator = (history, store) => ({
         type="button"
         icon={RedoIcon}
         aria-label={t("buttons.redo")}
-        onClick={updateData}
+        onClick={() => {
+          mixpanel.track("export_link_clicked");
+          updateData();
+        }}
         size={data?.size || "medium"}
         disabled={isRedoStackEmpty}
         data-testid="button-redo"
