@@ -1,19 +1,26 @@
-import { Dialog } from "../Dialog";
-import { useApp, useExcalidrawSetAppState } from "../App";
-import MermaidToExcalidraw from "./MermaidToExcalidraw";
-import TTDDialogTabs from "./TTDDialogTabs";
+import { Dialog } from '../Dialog';
+import { useApp, useExcalidrawSetAppState } from '../App';
+import MermaidToExcalidraw from './MermaidToExcalidraw';
+import TTDDialogTabs from './TTDDialogTabs';
+import { useEffect, useRef, useState } from 'react';
+import { useUIAppState } from '../../context/ui-appState';
+import { withInternalFallback } from '../hoc/withInternalFallback';
+import { TTDDialogTabTriggers } from './TTDDialogTabTriggers';
+import { TTDDialogTabTrigger } from './TTDDialogTabTrigger';
+import { TTDDialogTab } from './TTDDialogTab';
+import { t } from '../../i18n';
+import { TTDDialogInput } from './TTDDialogInput';
+import { TTDDialogOutput } from './TTDDialogOutput';
+import { TTDDialogPanel } from './TTDDialogPanel';
+import { TTDDialogPanels } from './TTDDialogPanels';
+import { ArrowRightIcon } from '../icons';
+import { atom, useAtom } from 'jotai';
+import { trackEvent } from '../../analytics';
+import { InlineIcon } from '../InlineIcon';
+import { TTDDialogSubmitShortcut } from './TTDDialogSubmitShortcut';
+import { isFiniteNumber } from '../../../math';
+import mixpanel from 'mixpanel-browser';
 import type { ChangeEventHandler } from "react";
-import { useEffect, useRef, useState } from "react";
-import { useUIAppState } from "../../context/ui-appState";
-import { withInternalFallback } from "../hoc/withInternalFallback";
-import { TTDDialogTabTriggers } from "./TTDDialogTabTriggers";
-import { TTDDialogTabTrigger } from "./TTDDialogTabTrigger";
-import { TTDDialogTab } from "./TTDDialogTab";
-import { t } from "../../i18n";
-import { TTDDialogInput } from "./TTDDialogInput";
-import { TTDDialogOutput } from "./TTDDialogOutput";
-import { TTDDialogPanel } from "./TTDDialogPanel";
-import { TTDDialogPanels } from "./TTDDialogPanels";
 import type { MermaidToExcalidrawLibProps } from "./common";
 import {
   convertMermaidToExcalidraw,
@@ -22,14 +29,7 @@ import {
 } from "./common";
 import type { NonDeletedExcalidrawElement } from "../../element/types";
 import type { BinaryFiles } from "../../types";
-import { ArrowRightIcon } from "../icons";
-
 import "./TTDDialog.scss";
-import { atom, useAtom } from "jotai";
-import { trackEvent } from "../../analytics";
-import { InlineIcon } from "../InlineIcon";
-import { TTDDialogSubmitShortcut } from "./TTDDialogSubmitShortcut";
-import { isFiniteNumber } from "../../../math";
 
 const MIN_PROMPT_LENGTH = 3;
 const MAX_PROMPT_LENGTH = 1000;
