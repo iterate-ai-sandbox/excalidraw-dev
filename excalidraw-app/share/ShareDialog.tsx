@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState } from "react";
-import { copyTextToSystemClipboard } from "../../packages/excalidraw/clipboard";
-import { trackEvent } from "../../packages/excalidraw/analytics";
-import { getFrame } from "../../packages/excalidraw/utils";
-import { useI18n } from "../../packages/excalidraw/i18n";
-import { KEYS } from "../../packages/excalidraw/keys";
-import { Dialog } from "../../packages/excalidraw/components/Dialog";
+import { useEffect, useRef, useState } from 'react';
+import { copyTextToSystemClipboard } from '../../packages/excalidraw/clipboard';
+import { trackEvent } from '../../packages/excalidraw/analytics';
+import { getFrame } from '../../packages/excalidraw/utils';
+import { useI18n } from '../../packages/excalidraw/i18n';
+import { KEYS } from '../../packages/excalidraw/keys';
+import { Dialog } from '../../packages/excalidraw/components/Dialog';
+import { TextField } from '../../packages/excalidraw/components/TextField';
+import { FilledButton } from '../../packages/excalidraw/components/FilledButton';
+import { activeRoomLinkAtom } from '../collab/Collab';
+import { atom, useAtom, useAtomValue } from 'jotai';
+import { useUIAppState } from '../../packages/excalidraw/context/ui-appState';
+import { useCopyStatus } from '../../packages/excalidraw/hooks/useCopiedIndicator';
 import {
   copyIcon,
   LinkIcon,
@@ -14,15 +20,9 @@ import {
   shareIOS,
   shareWindows,
 } from "../../packages/excalidraw/components/icons";
-import { TextField } from "../../packages/excalidraw/components/TextField";
-import { FilledButton } from "../../packages/excalidraw/components/FilledButton";
 import type { CollabAPI } from "../collab/Collab";
-import { activeRoomLinkAtom } from "../collab/Collab";
-import { atom, useAtom, useAtomValue } from "jotai";
 
 import "./ShareDialog.scss";
-import { useUIAppState } from "../../packages/excalidraw/context/ui-appState";
-import { useCopyStatus } from "../../packages/excalidraw/hooks/useCopiedIndicator";
 
 type OnExportToBackend = () => void;
 type ShareDialogType = "share" | "collaborationOnly";
@@ -127,7 +127,10 @@ const ActiveRoomDialog = ({
             label="Share"
             icon={getShareIcon()}
             className="ShareDialog__active__share"
-            onClick={shareRoomLink}
+            onClick={() => {
+              trackEvent("share_button_clicked123", { button_label: "Share" });
+              shareRoomLink();
+            }}
           />
         )}
         <FilledButton
