@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { trackEvent } from "../packages/excalidraw/analytics";
 import { getDefaultAppState } from "../packages/excalidraw/appState";
 import { ErrorDialog } from "../packages/excalidraw/components/ErrorDialog";
+import mixpanel from "mixpanel-browser";
 import { TopErrorBoundary } from "./components/TopErrorBoundary";
 import {
   APP_NAME,
@@ -200,6 +201,7 @@ const initializeScene = async (opts: {
     | { isExternalScene: false; id?: null; key?: null }
   )
 > => {
+  mixpanel.track("scene loaded");
   const searchParams = new URLSearchParams(window.location.search);
   const id = searchParams.get("id");
   const jsonBackendMatch = window.location.hash.match(
