@@ -216,6 +216,7 @@ export const DebugFooter = ({ onChange }: { onChange: () => void }) => {
         type="button"
         onClick={trashFrames}
       >
+mixpanel.track('button pressed');
         <div
           className="ToolIcon__icon"
           aria-hidden="true"
