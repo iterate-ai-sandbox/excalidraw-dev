@@ -173,10 +173,10 @@ const ActiveRoomDialog = ({
           label={t("roomDialog.button_stopSession")}
           icon={playerStopFilledIcon}
           onClick={() => {
-            mixpanel.track('share_live_collab_session_stopped', {
-              collab_session_name: collabAPI.getUsername(),
-              collab_session_full_link: activeRoomLink,
-            })
+            // mixpanel.track('share_live_collab_session_stopped', {
+            //   collab_session_name: collabAPI.getUsername(),
+            //   collab_session_full_link: activeRoomLink,
+            // })
             trackEvent("share", "room closed");
             collabAPI.stopCollaboration();
             if (!collabAPI.isCollaborating()) {
