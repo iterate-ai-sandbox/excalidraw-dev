@@ -1,10 +1,17 @@
-import polyfill from "../packages/excalidraw/polyfill";
+import clsx from "clsx";
+import { Provider, useAtom, useAtomValue } from "jotai";
+import mixpanel from "mixpanel-browser";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Excalidraw,
+  LiveCollaborationTrigger,
+  reconcileElements,
+  StoreAction,
+  TTDDialogTrigger,
+} from "../packages/excalidraw";
 import { trackEvent } from "../packages/excalidraw/analytics";
 import { getDefaultAppState } from "../packages/excalidraw/appState";
 import { ErrorDialog } from "../packages/excalidraw/components/ErrorDialog";
-import mixpanel from "mixpanel-browser";
-import { TopErrorBoundary } from "./components/TopErrorBoundary";
 import {
   APP_NAME,
   EVENT,
@@ -13,6 +20,14 @@ import {
   VERSION_TIMEOUT,
 } from "../packages/excalidraw/constants";
 import { loadFromBlob } from "../packages/excalidraw/data/blob";
+import {
+  parseLibraryTokensFromUrl,
+  useHandleLibrary,
+} from "../packages/excalidraw/data/library";
+import type { RestoredDataState } from "../packages/excalidraw/data/restore";
+import { restore, restoreAppState } from "../packages/excalidraw/data/restore";
+import { newElementWith } from "../packages/excalidraw/element/mutateElement";
+import { isInitializedImageElement } from "../packages/excalidraw/element/typeChecks";
 import type {
   FileId,
   NonDeletedExcalidrawElement,
@@ -20,30 +35,26 @@ import type {
 } from "../packages/excalidraw/element/types";
 import { useCallbackRefState } from "../packages/excalidraw/hooks/useCallbackRefState";
 import { t } from "../packages/excalidraw/i18n";
-import {
-  Excalidraw,
-  LiveCollaborationTrigger,
-  TTDDialogTrigger,
-  StoreAction,
-  reconcileElements,
-} from "../packages/excalidraw";
+import { useAtomWithInitialValue } from "../packages/excalidraw/jotai";
+import polyfill from "../packages/excalidraw/polyfill";
 import type {
   AppState,
-  ExcalidrawImperativeAPI,
   BinaryFiles,
+  ExcalidrawImperativeAPI,
   ExcalidrawInitialDataState,
   UIAppState,
 } from "../packages/excalidraw/types";
 import type { ResolvablePromise } from "../packages/excalidraw/utils";
 import {
   debounce,
-  getVersion,
   getFrame,
+  getVersion,
+  isRunningInIframe,
   isTestEnv,
   preventUnload,
   resolvablePromise,
-  isRunningInIframe,
 } from "../packages/excalidraw/utils";
+import { appJotaiStore } from "./app-jotai";
 import {
   FIREBASE_STORAGE_PREFIXES,
   isExcalidrawPlusSignedUser,
@@ -56,78 +67,67 @@ import Collab, {
   isCollaboratingAtom,
   isOfflineAtom,
 } from "./collab/Collab";
+import { AppFooter } from "./components/AppFooter";
+import { AppMainMenu } from "./components/AppMainMenu";
+import { AppWelcomeScreen } from "./components/AppWelcomeScreen";
+import {
+  ExportToExcalidrawPlus,
+  exportToExcalidrawPlus,
+} from "./components/ExportToExcalidrawPlus";
+import { TopErrorBoundary } from "./components/TopErrorBoundary";
+import CustomStats from "./CustomStats";
 import {
   exportToBackend,
   getCollaborationLinkData,
   isCollaborationLink,
   loadScene,
 } from "./data";
-import {
-  importFromLocalStorage,
-  importUsernameFromLocalStorage,
-} from "./data/localStorage";
-import CustomStats from "./CustomStats";
-import type { RestoredDataState } from "../packages/excalidraw/data/restore";
-import { restore, restoreAppState } from "../packages/excalidraw/data/restore";
-import {
-  ExportToExcalidrawPlus,
-  exportToExcalidrawPlus,
-} from "./components/ExportToExcalidrawPlus";
 import { updateStaleImageStatuses } from "./data/FileManager";
-import { newElementWith } from "../packages/excalidraw/element/mutateElement";
-import { isInitializedImageElement } from "../packages/excalidraw/element/typeChecks";
 import { loadFilesFromFirebase } from "./data/firebase";
 import {
   LibraryIndexedDBAdapter,
   LibraryLocalStorageMigrationAdapter,
   LocalData,
 } from "./data/LocalData";
-import { isBrowserStorageStateNewer } from "./data/tabSync";
-import clsx from "clsx";
 import {
-  parseLibraryTokensFromUrl,
-  useHandleLibrary,
-} from "../packages/excalidraw/data/library";
-import { AppMainMenu } from "./components/AppMainMenu";
-import { AppWelcomeScreen } from "./components/AppWelcomeScreen";
-import { AppFooter } from "./components/AppFooter";
-import { Provider, useAtom, useAtomValue } from "jotai";
-import { useAtomWithInitialValue } from "../packages/excalidraw/jotai";
-import { appJotaiStore } from "./app-jotai";
+  importFromLocalStorage,
+  importUsernameFromLocalStorage,
+} from "./data/localStorage";
+import { isBrowserStorageStateNewer } from "./data/tabSync";
 
-import "./index.scss";
-import type { ResolutionType } from "../packages/excalidraw/utility-types";
-import { ShareableLinkDialog } from "../packages/excalidraw/components/ShareableLinkDialog";
-import { openConfirmModal } from "../packages/excalidraw/components/OverwriteConfirm/OverwriteConfirmState";
-import { OverwriteConfirmDialog } from "../packages/excalidraw/components/OverwriteConfirm/OverwriteConfirm";
-import Trans from "../packages/excalidraw/components/Trans";
-import { ShareDialog, shareDialogStateAtom } from "./share/ShareDialog";
-import CollabError, { collabErrorIndicatorAtom } from "./collab/CollabError";
-import type { RemoteExcalidrawElement } from "../packages/excalidraw/data/reconcile";
 import {
   CommandPalette,
   DEFAULT_CATEGORIES,
 } from "../packages/excalidraw/components/CommandPalette/CommandPalette";
 import {
-  GithubIcon,
-  XBrandIcon,
   DiscordIcon,
   ExcalLogo,
-  usersIcon,
   exportToPlus,
+  GithubIcon,
   share,
+  usersIcon,
+  XBrandIcon,
   youtubeIcon,
 } from "../packages/excalidraw/components/icons";
-import { appThemeAtom, useHandleAppTheme } from "./useHandleAppTheme";
+import { OverwriteConfirmDialog } from "../packages/excalidraw/components/OverwriteConfirm/OverwriteConfirm";
+import { openConfirmModal } from "../packages/excalidraw/components/OverwriteConfirm/OverwriteConfirmState";
+import { ShareableLinkDialog } from "../packages/excalidraw/components/ShareableLinkDialog";
+import Trans from "../packages/excalidraw/components/Trans";
+import type { RemoteExcalidrawElement } from "../packages/excalidraw/data/reconcile";
+import type { ResolutionType } from "../packages/excalidraw/utility-types";
 import { getPreferredLanguage } from "./app-language/language-detector";
 import { useAppLangCode } from "./app-language/language-state";
+import CollabError, { collabErrorIndicatorAtom } from "./collab/CollabError";
+import { AIComponents } from "./components/AI";
 import DebugCanvas, {
   debugRenderer,
   isVisualDebuggerEnabled,
   loadSavedDebugState,
 } from "./components/DebugCanvas";
-import { AIComponents } from "./components/AI";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
+import "./index.scss";
+import { ShareDialog, shareDialogStateAtom } from "./share/ShareDialog";
+import { appThemeAtom, useHandleAppTheme } from "./useHandleAppTheme";
 
 polyfill();
 
@@ -843,8 +843,12 @@ const ExcalidrawWrapper = () => {
               {collabError.message && <CollabError collabError={collabError} />}
               <LiveCollaborationTrigger
                 isCollaborating={isCollaborating}
-                onSelect={() =>
+                onSelect={() =>{
+                  mixpanel.track("share_started", {
+                    'was_board_empty?': excalidrawAPI?.getSceneElements().length === 0,
+                  });
                   setShareDialogState({ isOpen: true, type: "share" })
+                }
                 }
               />
             </div>

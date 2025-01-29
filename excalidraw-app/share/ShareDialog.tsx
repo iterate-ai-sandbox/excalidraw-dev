@@ -1,10 +1,10 @@
+import { atom, useAtom, useAtomValue } from "jotai";
+import mixpanel from "mixpanel-browser";
 import { useEffect, useRef, useState } from "react";
-import { copyTextToSystemClipboard } from "../../packages/excalidraw/clipboard";
 import { trackEvent } from "../../packages/excalidraw/analytics";
-import { getFrame } from "../../packages/excalidraw/utils";
-import { useI18n } from "../../packages/excalidraw/i18n";
-import { KEYS } from "../../packages/excalidraw/keys";
+import { copyTextToSystemClipboard } from "../../packages/excalidraw/clipboard";
 import { Dialog } from "../../packages/excalidraw/components/Dialog";
+import { FilledButton } from "../../packages/excalidraw/components/FilledButton";
 import {
   copyIcon,
   LinkIcon,
@@ -15,14 +15,15 @@ import {
   shareWindows,
 } from "../../packages/excalidraw/components/icons";
 import { TextField } from "../../packages/excalidraw/components/TextField";
-import { FilledButton } from "../../packages/excalidraw/components/FilledButton";
+import { useI18n } from "../../packages/excalidraw/i18n";
+import { KEYS } from "../../packages/excalidraw/keys";
+import { getFrame } from "../../packages/excalidraw/utils";
 import type { CollabAPI } from "../collab/Collab";
 import { activeRoomLinkAtom } from "../collab/Collab";
-import { atom, useAtom, useAtomValue } from "jotai";
 
-import "./ShareDialog.scss";
 import { useUIAppState } from "../../packages/excalidraw/context/ui-appState";
 import { useCopyStatus } from "../../packages/excalidraw/hooks/useCopiedIndicator";
+import "./ShareDialog.scss";
 
 type OnExportToBackend = () => void;
 type ShareDialogType = "share" | "collaborationOnly";
@@ -61,6 +62,12 @@ const ActiveRoomDialog = ({
   activeRoomLink: string;
   handleClose: () => void;
 }) => {
+  useEffect(()=>{
+    mixpanel.track('share_live_collab_screen_opened',{
+      collab_session_full_link1: activeRoomLink,
+      collab_session_name: collabAPI.getUsername(),
+    })
+  },[])
   const { t } = useI18n();
   const [, setJustCopied] = useState(false);
   const timerRef = useRef<number>(0);
@@ -124,7 +131,7 @@ const ActiveRoomDialog = ({
           <FilledButton
             size="large"
             variant="icon"
-            label="Share"
+            label="1Share"
             icon={getShareIcon()}
             className="ShareDialog__active__share"
             onClick={shareRoomLink}
@@ -136,6 +143,9 @@ const ActiveRoomDialog = ({
           icon={copyIcon}
           status={copyStatus}
           onClick={() => {
+            mixpanel.track('share_live_collab_link_copied', {
+              collab_session_name: collabAPI.getUsername(),
+            });
             copyRoomLink();
             onCopy();
           }}
@@ -163,6 +173,10 @@ const ActiveRoomDialog = ({
           label={t("roomDialog.button_stopSession")}
           icon={playerStopFilledIcon}
           onClick={() => {
+            mixpanel.track('share_live_collab_session_stopped', {
+              collab_session_name: collabAPI.getUsername(),
+              collab_session_full_link: activeRoomLink,
+            })
             trackEvent("share", "room closed");
             collabAPI.stopCollaboration();
             if (!collabAPI.isCollaborating()) {
@@ -176,6 +190,13 @@ const ActiveRoomDialog = ({
 };
 
 const ShareDialogPicker = (props: ShareDialogProps) => {
+
+  useEffect(()=>{
+    mixpanel.track('share_options_screen_opened', {
+      count_of_displayed_options: 2,
+    })
+  },[])
+
   const { t } = useI18n();
 
   const { collabAPI } = props;
@@ -197,6 +218,7 @@ const ShareDialogPicker = (props: ShareDialogProps) => {
           label={t("roomDialog.button_startSession")}
           icon={playerPlayIcon}
           onClick={() => {
+            mixpanel.track('share_live_collab_option_selected');
             trackEvent("share", "room creation", `ui (${getFrame()})`);
             collabAPI.startCollaboration(null);
           }}
