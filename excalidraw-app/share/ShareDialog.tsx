@@ -191,11 +191,11 @@ const ActiveRoomDialog = ({
 
 const ShareDialogPicker = (props: ShareDialogProps) => {
 
-  useEffect(()=>{
-    mixpanel.track('share_options_screen_opened', {
-      count_of_displayed_options: '2',
-    })
-  },[])
+  // useEffect(()=>{
+  //   mixpanel.track('share_options_screen_opened', {
+  //     count_of_displayed_options: '2',
+  //   })
+  // },[])
 
   const { t } = useI18n();
 
