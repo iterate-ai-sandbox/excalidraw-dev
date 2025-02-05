@@ -1,19 +1,19 @@
+import mixpanel from "mixpanel-browser";
 import React from "react";
+import { actionSaveFileToDisk } from "../actions/actionExport";
 import type { NonDeletedExcalidrawElement } from "../element/types";
 import { t } from "../i18n";
-
-import type { ExportOpts, BinaryFiles, UIAppState } from "../types";
+import type { BinaryFiles, ExportOpts, UIAppState } from "../types";
+import { Card } from "./Card";
 import { Dialog } from "./Dialog";
 import { exportToFileIcon, LinkIcon } from "./icons";
 import { ToolButton } from "./ToolButton";
-import { actionSaveFileToDisk } from "../actions/actionExport";
-import { Card } from "./Card";
 
-import "./ExportDialog.scss";
-import { nativeFileSystemSupported } from "../data/filesystem";
-import { trackEvent } from "../analytics";
 import type { ActionManager } from "../actions/manager";
+import { trackEvent } from "../analytics";
+import { nativeFileSystemSupported } from "../data/filesystem";
 import { getFrame } from "../utils";
+import "./ExportDialog.scss";
 
 export type ExportCB = (
   elements: readonly NonDeletedExcalidrawElement[],
@@ -111,6 +111,15 @@ export const JSONExportDialog = ({
   canvas: HTMLCanvasElement;
   setAppState: React.Component<any, UIAppState>["setState"];
 }) => {
+  React.useEffect(() => {
+    mixpanel.init("dc998fe8d19ce6cb9301634847780fb8");
+    mixpanel.track("image_export_options_viewed", {
+      background_state: appState.exportBackground,
+      dark_mode_state: appState.exportWithDarkMode,
+      embed_scene_state: appState.exportEmbedScene,
+      scale_factor: appState.exportScale,
+    });
+  }, []);
   const handleClose = React.useCallback(() => {
     setAppState({ openDialog: null });
   }, [setAppState]);

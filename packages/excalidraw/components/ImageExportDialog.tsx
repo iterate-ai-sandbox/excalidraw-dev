@@ -4,38 +4,39 @@ import type { ActionManager } from "../actions/manager";
 import type { AppClassProperties, BinaryFiles, UIAppState } from "../types";
 
 import {
-  actionExportWithDarkMode,
   actionChangeExportBackground,
   actionChangeExportEmbedScene,
   actionChangeExportScale,
   actionChangeProjectName,
+  actionExportWithDarkMode,
 } from "../actions/actionExport";
 import { probablySupportsClipboardBlob } from "../clipboard";
 import {
   DEFAULT_EXPORT_PADDING,
   EXPORT_IMAGE_TYPES,
-  isFirefox,
   EXPORT_SCALES,
+  isFirefox,
 } from "../constants";
 
+import { exportToCanvas } from "../../utils/export";
 import { canvasToBlob } from "../data/blob";
 import { nativeFileSystemSupported } from "../data/filesystem";
 import type { NonDeletedExcalidrawElement } from "../element/types";
 import { t } from "../i18n";
 import { isSomeElementSelected } from "../scene";
-import { exportToCanvas } from "../../utils/export";
 
-import { copyIcon, downloadIcon, helpIcon } from "./icons";
 import { Dialog } from "./Dialog";
+import { copyIcon, downloadIcon, helpIcon } from "./icons";
 import { RadioGroup } from "./RadioGroup";
 import { Switch } from "./Switch";
 import { Tooltip } from "./Tooltip";
 
-import "./ImageExportDialog.scss";
-import { FilledButton } from "./FilledButton";
-import { cloneJSON } from "../utils";
+import mixpanel from "mixpanel-browser";
 import { prepareElementsForExport } from "../data";
 import { useCopyStatus } from "../hooks/useCopiedIndicator";
+import { cloneJSON } from "../utils";
+import { FilledButton } from "./FilledButton";
+import "./ImageExportDialog.scss";
 
 const supportsContextFilters =
   "filter" in document.createElement("canvas").getContext("2d")!;
@@ -110,6 +111,15 @@ const ImageExportModal = ({
     appStateSnapshot,
     exportSelectionOnly,
   );
+  useEffect(()=>{
+    mixpanel.init("dc998fe8d19ce6cb9301634847780fb8");
+    mixpanel.track("image_export_options_viewed", {
+      background_state: appStateSnapshot.exportBackground,
+      dark_mode_state: appStateSnapshot.exportWithDarkMode,
+      embed_scene_state: appStateSnapshot.exportEmbedScene,
+      scale_factor: appStateSnapshot.exportScale,
+    });
+  },[])
 
   useEffect(() => {
     const previewNode = previewRef.current;
@@ -218,6 +228,13 @@ const ImageExportModal = ({
             name="exportBackgroundSwitch"
             checked={exportWithBackground}
             onChange={(checked) => {
+              mixpanel.track("image_export_background_toggled1", {
+                background_initial_state: appStateSnapshot.exportBackground,
+                background_final_state: checked,
+                dark_mode_state: appStateSnapshot.exportWithDarkMode,
+                embed_scene_state: appStateSnapshot.exportEmbedScene,
+                scale_factor: appStateSnapshot.exportScale,
+              });
               setExportWithBackground(checked);
               actionManager.executeAction(
                 actionChangeExportBackground,
@@ -236,6 +253,13 @@ const ImageExportModal = ({
               name="exportDarkModeSwitch"
               checked={exportDarkMode}
               onChange={(checked) => {
+                mixpanel.track("image_export_dark_mode_toggled", {
+                  embed_scene_state: appStateSnapshot.exportEmbedScene,
+                  scale_factor: appStateSnapshot.exportScale.toString(),
+                  dark_mode_final_state: checked,
+                  background_state: appStateSnapshot.exportBackground,
+                  dark_mode_initial_state: appStateSnapshot.exportWithDarkMode,
+                });
                 setExportDarkMode(checked);
                 actionManager.executeAction(
                   actionExportWithDarkMode,
@@ -255,6 +279,13 @@ const ImageExportModal = ({
             name="exportEmbedSwitch"
             checked={embedScene}
             onChange={(checked) => {
+              mixpanel.track("image_export_embed_scene_toggled", {
+                dark_mode_state1: appStateSnapshot.exportWithDarkMode,
+                embed_scene_initial_state: appStateSnapshot.exportEmbedScene,
+                embed_scene_final_state1: checked,
+                scale_factor: appStateSnapshot.exportScale,
+                background_state: appStateSnapshot.exportBackground,
+              });
               setEmbedScene(checked);
               actionManager.executeAction(
                 actionChangeExportEmbedScene,
@@ -272,6 +303,13 @@ const ImageExportModal = ({
             name="exportScale"
             value={exportScale}
             onChange={(scale) => {
+              mixpanel.track("image_export_scale_toggled", {
+                background_state: appStateSnapshot.exportBackground,
+                scale_factor_initial_state: appStateSnapshot.exportScale,
+                scale_factor_final_state: scale,
+                dark_mode_state: appStateSnapshot.exportWithDarkMode,
+                embed_scene_state: appStateSnapshot.exportEmbedScene,
+              });
               setExportScale(scale);
               actionManager.executeAction(actionChangeExportScale, "ui", scale);
             }}
@@ -286,11 +324,17 @@ const ImageExportModal = ({
           <FilledButton
             className="ImageExportModal__settings__buttons__button"
             label={t("imageExportDialog.title.exportToPng")}
-            onClick={() =>
+            onClick={() => {
+              mixpanel.track("image_export_png_clicked", {
+                background_state: appStateSnapshot.exportBackground,
+                dark_mode_state: appStateSnapshot.exportWithDarkMode,
+                embed_scene_state: appStateSnapshot.exportEmbedScene,
+                scale_factor: appStateSnapshot.exportScale.toString(),
+              });
               onExportImage(EXPORT_IMAGE_TYPES.png, exportedElements, {
                 exportingFrame,
-              })
-            }
+              });
+            }}
             icon={downloadIcon}
           >
             {t("imageExportDialog.button.exportToPng")}
@@ -298,11 +342,17 @@ const ImageExportModal = ({
           <FilledButton
             className="ImageExportModal__settings__buttons__button"
             label={t("imageExportDialog.title.exportToSvg")}
-            onClick={() =>
+            onClick={() => {
+              mixpanel.track("image_export_svg_clicked1", {
+                background_state: appStateSnapshot.exportBackground,
+                dark_mode_state: appStateSnapshot.exportWithDarkMode,
+                embed_scene_state: appStateSnapshot.exportEmbedScene,
+                scale_factor: appStateSnapshot.exportScale.toString(),
+              });
               onExportImage(EXPORT_IMAGE_TYPES.svg, exportedElements, {
                 exportingFrame,
-              })
-            }
+              });
+            }}
             icon={downloadIcon}
           >
             {t("imageExportDialog.button.exportToSvg")}
@@ -313,6 +363,12 @@ const ImageExportModal = ({
               label={t("imageExportDialog.title.copyPngToClipboard")}
               status={copyStatus}
               onClick={async () => {
+                mixpanel.track("image_export_copy_to_clipboard_clicked1", {
+                  background_state: appStateSnapshot.exportBackground,
+                  dark_mode_state1: appStateSnapshot.exportWithDarkMode,
+                  embed_scene_state: appStateSnapshot.exportEmbedScene,
+                  scale_factor: appStateSnapshot.exportScale.toString(),
+                });
                 await onExportImage(
                   EXPORT_IMAGE_TYPES.clipboard,
                   exportedElements,

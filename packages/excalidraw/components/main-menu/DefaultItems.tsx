@@ -1,28 +1,6 @@
-import { getShortcutFromShortcutName } from "../../actions/shortcuts";
-import { useI18n } from "../../i18n";
-import {
-  useExcalidrawSetAppState,
-  useExcalidrawActionManager,
-  useExcalidrawElements,
-  useAppProps,
-} from "../App";
-import {
-  boltIcon,
-  DeviceDesktopIcon,
-  ExportIcon,
-  ExportImageIcon,
-  HelpIcon,
-  LoadIcon,
-  MoonIcon,
-  save,
-  searchIcon,
-  SunIcon,
-  TrashIcon,
-  usersIcon,
-} from "../icons";
-import { GithubIcon, DiscordIcon, XBrandIcon } from "../icons";
-import DropdownMenuItem from "../dropdownMenu/DropdownMenuItem";
-import DropdownMenuItemLink from "../dropdownMenu/DropdownMenuItemLink";
+import clsx from "clsx";
+import { useSetAtom } from "jotai";
+import mixpanel from "mixpanel-browser";
 import {
   actionClearCanvas,
   actionLoadScene,
@@ -31,17 +9,42 @@ import {
   actionToggleSearchMenu,
   actionToggleTheme,
 } from "../../actions";
-import clsx from "clsx";
-import { useSetAtom } from "jotai";
-import { activeConfirmDialogAtom } from "../ActiveConfirmDialog";
-import { jotaiScope } from "../../jotai";
+import { getShortcutFromShortcutName } from "../../actions/shortcuts";
+import { trackEvent } from "../../analytics";
+import { THEME } from "../../constants";
 import { useUIAppState } from "../../context/ui-appState";
+import type { Theme } from "../../element/types";
+import { useI18n } from "../../i18n";
+import { jotaiScope } from "../../jotai";
+import { activeConfirmDialogAtom } from "../ActiveConfirmDialog";
+import {
+  useAppProps,
+  useExcalidrawActionManager,
+  useExcalidrawElements,
+  useExcalidrawSetAppState,
+} from "../App";
 import { openConfirmModal } from "../OverwriteConfirm/OverwriteConfirmState";
 import Trans from "../Trans";
+import DropdownMenuItem from "../dropdownMenu/DropdownMenuItem";
 import DropdownMenuItemContentRadio from "../dropdownMenu/DropdownMenuItemContentRadio";
-import { THEME } from "../../constants";
-import type { Theme } from "../../element/types";
-import { trackEvent } from "../../analytics";
+import DropdownMenuItemLink from "../dropdownMenu/DropdownMenuItemLink";
+import {
+  boltIcon,
+  DeviceDesktopIcon,
+  DiscordIcon,
+  ExportIcon,
+  ExportImageIcon,
+  GithubIcon,
+  HelpIcon,
+  LoadIcon,
+  MoonIcon,
+  save,
+  searchIcon,
+  SunIcon,
+  TrashIcon,
+  usersIcon,
+  XBrandIcon,
+} from "../icons";
 import "./DefaultItems.scss";
 
 export const LoadScene = () => {
@@ -114,7 +117,10 @@ export const SaveAsImage = () => {
     <DropdownMenuItem
       icon={ExportImageIcon}
       data-testid="image-export-button"
-      onSelect={() => setAppState({ openDialog: { name: "imageExport" } })}
+      onSelect={() => {
+        mixpanel.track("image_export_menu_selected");
+        setAppState({ openDialog: { name: "imageExport" } });
+      }}
       shortcut={getShortcutFromShortcutName("imageExport")}
       aria-label={t("buttons.exportImage")}
     >
@@ -329,6 +335,7 @@ export const Export = () => {
       icon={ExportIcon}
       onSelect={() => {
         setAppState({ openDialog: { name: "jsonExport" } });
+
       }}
       data-testid="json-export-button"
       aria-label={t("buttons.export")}

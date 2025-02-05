@@ -2,15 +2,15 @@ import React from "react";
 import { useDevice, useExcalidrawSetAppState } from "../App";
 import DropdownMenu from "../dropdownMenu/DropdownMenu";
 
-import * as DefaultItems from "./DefaultItems";
-
-import { UserList } from "../UserList";
-import { t } from "../../i18n";
-import { HamburgerMenuIcon } from "../icons";
-import { withInternalFallback } from "../hoc/withInternalFallback";
-import { composeEventHandlers } from "../../utils";
+import mixpanel from "mixpanel-browser";
 import { useTunnels } from "../../context/tunnels";
 import { useUIAppState } from "../../context/ui-appState";
+import { t } from "../../i18n";
+import { composeEventHandlers } from "../../utils";
+import { withInternalFallback } from "../hoc/withInternalFallback";
+import { HamburgerMenuIcon } from "../icons";
+import { UserList } from "../UserList";
+import * as DefaultItems from "./DefaultItems";
 
 const MainMenu = Object.assign(
   withInternalFallback(
@@ -38,6 +38,7 @@ const MainMenu = Object.assign(
           <DropdownMenu open={appState.openMenu === "canvas"}>
             <DropdownMenu.Trigger
               onToggle={() => {
+                mixpanel.track("hamburger_button_clicked");
                 setAppState({
                   openMenu: appState.openMenu === "canvas" ? null : "canvas",
                 });
